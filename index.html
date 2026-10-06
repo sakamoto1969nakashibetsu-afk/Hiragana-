@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ffffff">
+<title>ひらがな1文字れんしゅう</title>
+<style>
+:root{
+  --bg:#f7f7f5;
+  --card:#fff;
+  --text:#111;
+  --sub:#666;
+  --line:#d9d9d9;
+  --btn:#111;
+  --btnText:#fff;
+  --selected:#111;
+  --selectedText:#fff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  justify-content:center
+}
+.app{width:min(920px,100%);padding:18px}
+h1{font-size:24px;margin:4px 0 14px}
+.card{
+  background:var(--card);
+  border-radius:20px;
+  padding:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06)
+}
+.display{
+  min-height:43vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:clamp(150px,42vw,360px);
+  font-weight:400;
+  line-height:1;
+  user-select:none;
+  -webkit-user-select:none
+}
+.status{text-align:center;color:var(--sub);font-size:15px;min-height:22px}
+.controls{display:grid;gap:12px;margin-top:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,select{
+  font:inherit;
+  font-size:18px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  padding:12px 14px;
+  background:#fff
+}
+button.primary{background:var(--btn);color:var(--btnText);border-color:var(--btn)}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+label{font-size:16px;color:#333}
+.grow{flex:1}
+.small{font-size:14px;color:var(--sub);line-height:1.5;margin-top:8px}
+.toggle{display:flex;align-items:center;gap:7px}
+.section{
+  border-top:1px solid #ececec;
+  margin-top:4px;
+  padding-top:12px
+}
+.section-title{
+  font-weight:700;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap
+}
+.kana-grid{
+  display:grid;
+  grid-template-columns:repeat(10,minmax(44px,1fr));
+  gap:7px
+}
+.kana-btn{
+  min-width:0;
+  padding:10px 4px;
+  border-radius:12px;
+  font-size:22px;
+  line-height:1.1
+}
+.kana-btn.selected{
+  background:var(--selected);
+  color:var(--selectedText);
+  border-color:var(--selected)
+}
+.mini{
+  font-size:14px;
+  padding:8px 10px;
+  border-radius:10px
+}
+.count{
+  color:var(--sub);
+  font-size:14px;
+  font-weight:400
+}
+.notice{
+  padding:10px 12px;
+  background:#f4f4f2;
+  border-radius:12px;
+  font-size:14px;
+  line-height:1.5;
+  color:#444
+}
+@media(max-width:700px){
+  .app{padding:10px}
+  .card{padding:12px}
+  h1{font-size:20px}
+  button,select{font-size:16px}
+  .kana-grid{grid-template-columns:repeat(6,minmax(42px,1fr))}
+  .kana-btn{font-size:21px}
+  .display{min-height:38vh}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>ひらがな1文字れんしゅう</h1>
+  <div class="card">
+    <div id="char" class="display">あ</div>
+    <div id="status" class="status">「スタート」を押してください</div>
+
+    <div class="controls">
+      <div class="row">
+        <button id="start" class="primary grow">スタート</button>
+        <button id="stop" class="grow">ストップ</button>
+      </div>
+
+      <div class="row">
+        <button id="next" class="grow">次の文字</button>
+        <button id="speak" class="grow">もう一度読む</button>
+      </div>
+
+      <div class="section">
+        <div class="section-title">表示と出題</div>
+        <div class="row">
+          <label>フォント
+            <select id="font">
+              <option value="kyokasho" selected>教科書体</option>
+              <option value="gothic">ゴシック体</option>
+              <option value="mincho">明朝体</option>
+              <option value="maru">丸ゴシック体</option>
+            </select>
+          </label>
+
+          <label>表示順
+            <select id="mode">
+              <option value="random" selected>ランダム</option>
+              <option value="order">あいうえお順</option>
+            </select>
+          </label>
+
+          <label>読み上げまで
+            <select id="delay">
+              <option value="1000">1秒</option>
+              <option value="2000" selected>2秒</option>
+              <option value="3000">3秒</option>
+              <option value="4000">4秒</option>
+              <option value="5000">5秒</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <span>出題する文字を選ぶ <span id="selectedCount" class="count"></span></span>
+          <span>
+            <button id="selectAll" class="mini" type="button">全部選ぶ</button>
+            <button id="clearAll" class="mini" type="button">全部外す</button>
+          </span>
+        </div>
+
+        <div id="kanaGrid" class="kana-grid" aria-label="出題するひらがな"></div>
+
+        <div class="small">
+          文字をタップすると、出題する・しないを切り替えられます。選んだ文字はこの端末に保存されます。
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">音声</div>
+
+        <div class="row">
+          <label>日本語音声
+            <select id="voice">
+              <option value="">聞きやすい日本語音声を自動選択</option>
+            </select>
+          </label>
+
+          <label>話す速さ
+            <select id="rate">
+              <option value="0.70">かなりゆっくり</option>
+              <option value="0.82" selected>ゆっくり・はっきり</option>
+              <option value="0.92">ややゆっくり</option>
+              <option value="1.00">標準</option>
+            </select>
+          </label>
+
+          <label class="toggle">
+            <input type="checkbox" id="repeatVoice">
+            2回読む
+          </label>
+
+          <button id="voiceTest" class="mini" type="button">音声テスト</button>
+        </div>
+
+        <div class="notice">
+          音量は最大で読み上げます。日本語音声が複数ある端末では、上の「日本語音声」から聞きやすい声を選べます。
+          iPadでは最初に「スタート」または「音声テスト」を押してください。
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="row">
+          <label class="toggle">
+            <input type="checkbox" id="auto" checked>
+            読み上げ後、自動で次へ
+          </label>
+
+          <label>次の文字まで
+            <select id="gap">
+              <option value="1000" selected>1秒</option>
+              <option value="1500">1.5秒</option>
+              <option value="2000">2秒</option>
+              <option value="3000">3秒</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_KANA = [..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん"];
+
+const $ = id => document.getElementById(id);
+const charEl = $("char");
+const statusEl = $("status");
+const modeEl = $("mode");
+const delayEl = $("delay");
+const autoEl = $("auto");
+const gapEl = $("gap");
+const voiceEl = $("voice");
+const rateEl = $("rate");
+const repeatVoiceEl = $("repeatVoice");
+const fontEl = $("font");
+const kanaGrid = $("kanaGrid");
+const selectedCountEl = $("selectedCount");
+
+let running = false;
+let index = 0;
+let timerSpeak = null;
+let timerNext = null;
+let current = "あ";
+let lastRandom = "";
+
+function loadSelectedKana(){
+  try{
+    const saved = JSON.parse(localStorage.getItem("hiraganaSelectedKana") || "null");
+    if(Array.isArray(saved) && saved.length){
+      const valid = saved.filter(k => ALL_KANA.includes(k));
+      if(valid.length) return valid;
+    }
+  }catch(e){}
+  return [...ALL_KANA];
+}
+
+let selectedKana = loadSelectedKana();
+
+function saveSettings(){
+  try{
+    localStorage.setItem("hiraganaSelectedKana", JSON.stringify(selectedKana));
+    localStorage.setItem("hiraganaFont", fontEl.value);
+    localStorage.setItem("hiraganaMode", modeEl.value);
+    localStorage.setItem("hiraganaDelay", delayEl.value);
+    localStorage.setItem("hiraganaGap", gapEl.value);
+    localStorage.setItem("hiraganaRate", rateEl.value);
+    localStorage.setItem("hiraganaRepeatVoice", repeatVoiceEl.checked ? "1" : "0");
+    localStorage.setItem("hiraganaAuto", autoEl.checked ? "1" : "0");
+    localStorage.setItem("hiraganaVoice", voiceEl.value);
+  }catch(e){}
+}
+
+function restoreSettings(){
+  try{
+    const font = localStorage.getItem("hiraganaFont");
+    const mode = localStorage.getItem("hiraganaMode");
+    const delay = localStorage.getItem("hiraganaDelay");
+    const gap = localStorage.getItem("hiraganaGap");
+    const rate = localStorage.getItem("hiraganaRate");
+    const repeat = localStorage.getItem("hiraganaRepeatVoice");
+    const auto = localStorage.getItem("hiraganaAuto");
+
+    if(font && [...fontEl.options].some(o => o.value === font)) fontEl.value = font;
+    if(mode && [...modeEl.options].some(o => o.value === mode)) modeEl.value = mode;
+    if(delay && [...delayEl.options].some(o => o.value === delay)) delayEl.value = delay;
+    if(gap && [...gapEl.options].some(o => o.value === gap)) gapEl.value = gap;
+    if(rate && [...rateEl.options].some(o => o.value === rate)) rateEl.value = rate;
+    if(repeat !== null) repeatVoiceEl.checked = repeat === "1";
+    if(auto !== null) autoEl.checked = auto === "1";
+  }catch(e){}
+}
+
+function fontFamily(type){
+  switch(type){
+    case "gothic":
+      return '-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif';
+    case "mincho":
+      return '"Hiragino Mincho ProN","Yu Mincho","YuMincho",serif';
+    case "maru":
+      return '"Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro","Arial Rounded MT Bold",sans-serif';
+    case "kyokasho":
+    default:
+      return '"UD Digi Kyokasho N-R","UD Digi Kyokasho NP-R","YuKyokasho","Yu Kyokasho","Hiragino Mincho ProN",serif';
+  }
+}
+
+function applyFont(){
+  charEl.style.fontFamily = fontFamily(fontEl.value);
+  saveSettings();
+}
+
+function renderKanaGrid(){
+  kanaGrid.innerHTML = "";
+  ALL_KANA.forEach(kana => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "kana-btn" + (selectedKana.includes(kana) ? " selected" : "");
+    b.textContent = kana;
+    b.setAttribute("aria-pressed", selectedKana.includes(kana) ? "true" : "false");
+
+    b.addEventListener("click", () => {
+      if(selectedKana.includes(kana)){
+        selectedKana = selectedKana.filter(k => k !== kana);
+      }else{
+        selectedKana.push(kana);
+        selectedKana.sort((a,b) => ALL_KANA.indexOf(a) - ALL_KANA.indexOf(b));
+      }
+      renderKanaGrid();
+      resetAfterKanaChange();
+      saveSettings();
+    });
+
+    kanaGrid.appendChild(b);
+  });
+
+  selectedCountEl.textContent = `（${selectedKana.length}文字）`;
+  $("start").disabled = selectedKana.length === 0;
+  $("next").disabled = selectedKana.length === 0;
+}
+
+function resetAfterKanaChange(){
+  index = 0;
+  lastRandom = "";
+  running = false;
+  cancelTimers();
+
+  if(selectedKana.length){
+    current = selectedKana[0];
+    charEl.textContent = current;
+    statusEl.textContent = "「スタート」を押してください";
+  }else{
+    charEl.textContent = "？";
+    statusEl.textContent = "出題する文字を1文字以上選んでください";
+  }
+}
+
+function cancelTimers(){
+  clearTimeout(timerSpeak);
+  clearTimeout(timerNext);
+  timerSpeak = null;
+  timerNext = null;
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+function pickChar(){
+  const arr = selectedKana;
+  if(!arr.length) return false;
+
+  if(modeEl.value === "order"){
+    if(index >= arr.length) index = 0;
+    current = arr[index++];
+  }else{
+    if(arr.length === 1){
+      current = arr[0];
+    }else{
+      let c;
+      do{
+        c = arr[Math.floor(Math.random() * arr.length)];
+      }while(c === lastRandom);
+      current = c;
+      lastRandom = c;
+    }
+  }
+
+  charEl.textContent = current;
+  statusEl.textContent = "読んでみましょう";
+  return true;
+}
+
+function getJapaneseVoices(){
+  if(!("speechSynthesis" in window)) return [];
+  return speechSynthesis.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith("ja"));
+}
+
+function rankVoice(v){
+  const n = (v.name || "").toLowerCase();
+  let score = 0;
+  if(v.localService) score += 5;
+  if(n.includes("kyoko")) score += 4;
+  if(n.includes("oto")) score += 3;
+  if(n.includes("premium")) score += 3;
+  if(n.includes("enhanced")) score += 3;
+  return score;
+}
+
+function loadVoices(){
+  const voices = getJapaneseVoices().sort((a,b) => rankVoice(b) - rankVoice(a));
+  const savedVoice = localStorage.getItem("hiraganaVoice") || voiceEl.value;
+
+  voiceEl.innerHTML = '<option value="">聞きやすい日本語音声を自動選択</option>';
+
+  voices.forEach((v,i) => {
+    const o = document.createElement("option");
+    o.value = v.voiceURI || v.name || String(i);
+    o.textContent = `${v.name}（${v.lang}）`;
+    voiceEl.appendChild(o);
+  });
+
+  if(savedVoice && [...voiceEl.options].some(o => o.value === savedVoice)){
+    voiceEl.value = savedVoice;
+  }
+}
+
+function selectedVoice(){
+  const voices = getJapaneseVoices().sort((a,b) => rankVoice(b) - rankVoice(a));
+
+  if(voiceEl.value){
+    const found = voices.find(v =>
+      v.voiceURI === voiceEl.value ||
+      v.name === voiceEl.value
+    );
+    if(found) return found;
+  }
+
+  return voices[0] || null;
+}
+
+function speakOnce(text, onend){
+  if(!("speechSynthesis" in window)){
+    statusEl.textContent = "この端末では音声読み上げを使えません";
+    return;
+  }
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "ja-JP";
+  u.rate = Number(rateEl.value);
+  u.pitch = 1.0;
+  u.volume = 1.0;
+
+  const v = selectedVoice();
+  if(v) u.voice = v;
+
+  u.onstart = () => statusEl.textContent = "こたえ";
+  u.onend = () => { if(onend) onend(); };
+  u.onerror = () => statusEl.textContent = "音声を再生できませんでした";
+
+  speechSynthesis.speak(u);
+}
+
+function speakCurrent(callback){
+  if(!("speechSynthesis" in window)){
+    statusEl.textContent = "この端末では音声読み上げを使えません";
+    return;
+  }
+
+  speechSynthesis.cancel();
+
+  // Safari / iPadでcancel直後に音が欠けることがあるため、少しだけ間を置く。
+  setTimeout(() => {
+    speakOnce(current, () => {
+      if(repeatVoiceEl.checked){
+        setTimeout(() => {
+          speakOnce(current, () => {
+            statusEl.textContent = `「${current}」`;
+            if(callback) callback();
+          });
+        }, 260);
+      }else{
+        statusEl.textContent = `「${current}」`;
+        if(callback) callback();
+      }
+    });
+  }, 80);
+}
+
+function showAndSchedule(){
+  cancelTimers();
+  if(!pickChar()) return;
+
+  timerSpeak = setTimeout(() => {
+    speakCurrent(() => {
+      if(running && autoEl.checked){
+        timerNext = setTimeout(showAndSchedule, Number(gapEl.value));
+      }
+    });
+  }, Number(delayEl.value));
+}
+
+$("start").addEventListener("click", () => {
+  if(!selectedKana.length){
+    statusEl.textContent = "出題する文字を1文字以上選んでください";
+    return;
+  }
+
+  running = true;
+
+  // iOSではユーザー操作から音声機能を起動しておくと安定しやすい。
+  if("speechSynthesis" in window){
+    const warm = new SpeechSynthesisUtterance("");
+    warm.lang = "ja-JP";
+    warm.volume = 1;
+    speechSynthesis.speak(warm);
+  }
+
+  showAndSchedule();
+});
+
+$("stop").addEventListener("click", () => {
+  running = false;
+  cancelTimers();
+  statusEl.textContent = "停止中";
+});
+
+$("next").addEventListener("click", () => {
+  if(!selectedKana.length) return;
+  cancelTimers();
+  pickChar();
+
+  if(running){
+    timerSpeak = setTimeout(() => {
+      speakCurrent(() => {
+        if(running && autoEl.checked){
+          timerNext = setTimeout(showAndSchedule, Number(gapEl.value));
+        }
+      });
+    }, Number(delayEl.value));
+  }
+});
+
+$("speak").addEventListener("click", () => {
+  cancelTimers();
+  speakCurrent();
+});
+
+$("voiceTest").addEventListener("click", () => {
+  cancelTimers();
+  const old = current;
+  current = selectedKana[0] || "あ";
+  speakCurrent(() => {
+    current = old;
+  });
+});
+
+$("selectAll").addEventListener("click", () => {
+  selectedKana = [...ALL_KANA];
+  renderKanaGrid();
+  resetAfterKanaChange();
+  saveSettings();
+});
+
+$("clearAll").addEventListener("click", () => {
+  selectedKana = [];
+  renderKanaGrid();
+  resetAfterKanaChange();
+  saveSettings();
+});
+
+fontEl.addEventListener("change", applyFont);
+modeEl.addEventListener("change", () => {
+  index = 0;
+  lastRandom = "";
+  saveSettings();
+});
+delayEl.addEventListener("change", saveSettings);
+gapEl.addEventListener("change", saveSettings);
+rateEl.addEventListener("change", saveSettings);
+repeatVoiceEl.addEventListener("change", saveSettings);
+autoEl.addEventListener("change", saveSettings);
+voiceEl.addEventListener("change", saveSettings);
+
+restoreSettings();
+applyFont();
+renderKanaGrid();
+resetAfterKanaChange();
+
+if("speechSynthesis" in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+  setTimeout(loadVoices, 300);
+  setTimeout(loadVoices, 1000);
+}
+</script>
+</body>
+</html>
