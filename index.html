@@ -439,6 +439,47 @@ function feedback(title, detail, type = ""){
   $("heard").textContent = detail;
 }
 
+let soundContext = null;
+
+function prepareSoundEffects(){
+  const AudioContextAPI = window.AudioContext || window.webkitAudioContext;
+  if(!AudioContextAPI) return null;
+  try{
+    if(!soundContext) soundContext = new AudioContextAPI();
+    if(soundContext.state === "suspended") soundContext.resume().catch(() => {});
+    return soundContext;
+  }catch(e){ return null; }
+}
+
+function playTone(context, frequency, start, duration, volume, wave = "sine"){
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = wave;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.02);
+}
+
+function playJudgmentSound(kind){
+  const context = prepareSoundEffects();
+  if(!context) return;
+  const now = context.currentTime + 0.02;
+  if(kind === "correct"){
+    // 明るく短い上昇音。子どもが正解をすぐ分かる音にする。
+    playTone(context, 659.25, now, 0.13, 0.10);
+    playTone(context, 880.00, now + 0.11, 0.20, 0.12);
+  }else if(kind === "wrong" || kind === "unheard"){
+    // 不安を強めない、やさしい下降音。
+    playTone(context, 392.00, now, 0.14, 0.065, "triangle");
+    playTone(context, 293.66, now + 0.12, 0.22, 0.055, "triangle");
+  }
+}
+
 function updateVoiceControls(){
   const judge = isJudgeMode();
   $("judgeSection").hidden = !judge;
@@ -499,6 +540,7 @@ function completeAnswer(kind, heard = ""){
   stopListening();
   if(kind === "correct" && hintUsed) kind = "hint";
   roundResults.push({kana:current,kind,heard});
+  playJudgmentSound(kind);
   if(kind === "correct"){
     feedback("せいかい！", `聞き取った声：「${heard}」`, "correct");
   }else if(kind === "hint"){
@@ -536,16 +578,27 @@ function normalizeReading(text){
 // Recognizers sometimes write a single spoken syllable as a homophonic kanji.
 const SOUND_ALIASES = {
   "いい":"い", "ええ":"え", "ああ":"あ", "おお":"お", "うう":"う",
-  "絵":"え", "胃":"い", "尾":"お", "蚊":"か", "木":"き", "毛":"け", "子":"こ",
-  "詩":"し", "酢":"す", "背":"せ", "血":"ち", "手":"て", "戸":"と", "名":"な",
-  "二":"に", "荷":"に", "根":"ね", "野":"の", "葉":"は", "火":"ひ", "帆":"ほ",
-  "身":"み", "無":"む", "目":"め", "湯":"ゆ", "世":"よ", "輪":"わ"
+  "亜":"あ", "井":"い", "胃":"い", "位":"い", "鵜":"う", "絵":"え", "江":"え", "尾":"お", "緒":"お",
+  "蚊":"か", "課":"か", "科":"か", "可":"か", "木":"き", "気":"き", "期":"き", "区":"く", "句":"く", "九":"く",
+  "毛":"け", "家":"け", "子":"こ", "個":"こ", "差":"さ", "佐":"さ", "詩":"し", "市":"し", "四":"し",
+  "酢":"す", "巣":"す", "背":"せ", "瀬":"せ", "祖":"そ", "田":"た", "他":"た", "血":"ち", "地":"ち",
+  "津":"つ", "手":"て", "戸":"と", "都":"と", "名":"な", "二":"に", "荷":"に", "根":"ね", "音":"ね",
+  "野":"の", "葉":"は", "歯":"は", "火":"ひ", "日":"ひ", "府":"ふ", "屁":"へ", "帆":"ほ", "穂":"ほ",
+  "間":"ま", "魔":"ま", "身":"み", "実":"み", "無":"む", "目":"め", "藻":"も", "矢":"や",
+  "湯":"ゆ", "世":"よ", "利":"り", "理":"り", "炉":"ろ", "路":"ろ", "輪":"わ", "和":"わ"
 };
 
 function readingFromTranscript(text){
   const cleaned = normalizeReading(text);
   const kana = SOUND_ALIASES[cleaned] || cleaned;
   return ALL_KANA.includes(kana) ? kana : null;
+}
+
+function displayReading(text){
+  const cleaned = normalizeReading(text);
+  const kana = SOUND_ALIASES[cleaned] || cleaned;
+  if(/^[ぁ-ゖ]+$/.test(kana)) return kana;
+  return "ひらがなに変換できませんでした";
 }
 
 function matchesReading(text, target){
@@ -596,7 +649,8 @@ function listenForAnswer(){
     hasResult = true;
     const candidates = Array.from(result).map(a => a.transcript);
     const match = candidates.find(t => matchesReading(t, target));
-    const heard = match || candidates[0] || "";
+    const rawHeard = match || candidates[0] || "";
+    const heard = rawHeard ? displayReading(rawHeard) : "";
     completeAnswer(match ? "correct" : heard ? "wrong" : "unheard", heard);
   };
   const retry = () => {
@@ -920,6 +974,7 @@ function showAndSchedule(){
 
 $("start").addEventListener("click", () => {
   if(!selectedKana.length || running) return;
+  prepareSoundEffects();
   if(isJudgeMode()){
     if(!sessionActive || roundComplete){
       resetAfterKanaChange();
