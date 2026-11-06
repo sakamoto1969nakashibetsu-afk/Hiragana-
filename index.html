@@ -283,11 +283,14 @@ button:active:not(:disabled){transform:scale(.97)}
   .display{height:clamp(105px,25dvh,178px);font-size:clamp(92px,22dvh,160px)}
 }
 
+.play-count{width:100%;padding:9px;margin-top:9px;font-size:14px;color:#b6ffe9}.play-note{font-size:11px;color:#a8bbcb;margin:5px 0 0}.history{background:#0d1929;color:#eaf7ff;border:1px solid #5bbaa6;border-radius:18px;width:min(540px,94vw);max-height:85dvh;padding:22px}.history::backdrop{background:#020812cc}.history h2{margin:0;font-size:23px}.history-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.history-list{max-height:45dvh;overflow:auto;padding-left:30px;line-height:2;border-top:1px solid #36516a}.history-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}.history button:disabled{opacity:.4;cursor:default}
+
+.play-count{background:#13746d;color:white;border:0;width:auto;margin:0;padding:6px 12px;font-size:13px}.play-note{color:#53636b;font-size:11px;margin:2px 0 5px}.history button{background:#13746d;color:white}.history .hint{font-size:13px}.history-list{font-size:16px}
 </style>
 </head>
 <body>
 <div class="app">
-  <h1>🌈 ひらがな1文字れんしゅう</h1>
+  <h1>🌈 ひらがな1文字れんしゅう</h1><button class="play-count" id="playCount" aria-haspopup="dialog">みんなの練習回数：確認中…</button><p class="play-note">更新版・練習記録つき｜回数を押すと開始日時を表示。練習中に開くと停止します。</p>
   <div class="card">
     <div class="mode-switch" role="radiogroup" aria-label="学習モード">
       <button id="modePractice" class="mode-button" type="button" role="radio" aria-checked="true"><span>🌷 今までのモード</span><small>読んでれんしゅう</small></button>
@@ -452,7 +455,7 @@ button:active:not(:disabled){transform:scale(.97)}
   </div>
 </div>
 
-<script>
+<dialog class="history" id="history" aria-labelledby="historyTitle"><div class="history-head"><h2 id="historyTitle">みんなの練習記録</h2><button id="historyClose" autofocus>閉じる</button></div><p class="hint">練習を新しく開始した回数です（自分も含みます）。<br>開始した日時を新しい順に表示します（日本時間）。</p><p id="historyStatus" role="status"></p><ol class="history-list" id="historyList"></ol><div class="history-nav"><button id="historyPrev">前へ</button><span id="historyPage"></span><button id="historyNext">次へ</button><button id="historyRefresh">更新</button></div></dialog><script>
 const ALL_KANA = [..."あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん"];
 
 const $ = id => document.getElementById(id);
@@ -1087,6 +1090,7 @@ $("start").addEventListener("click", () => {
   if(isJudgeMode()){
     if(!sessionActive || roundComplete){
       resetAfterKanaChange();
+      recordPlay();
       roundKana = [...selectedKana];
       sessionActive = true;
       running = true;
@@ -1105,6 +1109,7 @@ $("start").addEventListener("click", () => {
     if(resuming && Date.now() >= sessionDeadline){ finishTimedSession(); return; }
     if(!resuming){
       resetAfterKanaChange();
+      recordPlay();
       timedSessionActive = true;
       sessionDeadline = Date.now() + Number(durationEl.value) * 60000;
     }
@@ -1121,6 +1126,7 @@ $("start").addEventListener("click", () => {
       scheduleReading();
     }else{ showAndSchedule(); }
   }else{
+    recordPlay();
     running = true;
     if("speechSynthesis" in window){
       const warm = new SpeechSynthesisUtterance("");
@@ -1271,6 +1277,36 @@ if("speechSynthesis" in window){
   setTimeout(loadVoices, 300);
   setTimeout(loadVoices, 1000);
 }
+const PLAY_API='https://wchgfesupgawcnqongnt.supabase.co/rest/v1/rpc/';
+const PLAY_PUBLIC_KEY='sb_publishable_vxOZCjZrvzhDmM8VqkjNlg_nG0b67-i';
+let historyPage=0,historyRequest=0,countRequest=0;
+const pendingPlays=new Set();let sendingPlays=false;
+async function playRpc(name,body){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
+ try{const response=await fetch(PLAY_API+name,{method:'POST',headers:{apikey:PLAY_PUBLIC_KEY,'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
+ if(!response.ok)throw Error('記録の通信エラー');
+ return name==='get_hiragana_plays'?await response.json():null;
+ }finally{clearTimeout(timer)}
+}
+async function refreshCount(){const request=++countRequest;try{const data=await playRpc('get_hiragana_plays',{page_number:0});if(request!==countRequest)return;$('playCount').textContent='みんなの練習回数：'+Number(data.total).toLocaleString('ja-JP')+'回';}catch(e){if(request===countRequest)$('playCount').textContent='練習回数：通信できません（押して再確認）';}}
+function recordPlay(){try{pendingPlays.add(crypto.randomUUID());flushPlays();}catch(e){$('playCount').textContent='練習記録を保存できません';}}
+async function flushPlays(){if(sendingPlays||!pendingPlays.size)return;sendingPlays=true;try{for(const id of pendingPlays){await playRpc('record_hiragana_play',{play_id:id});pendingPlays.delete(id);}await refreshCount();}catch(e){$('playCount').textContent='練習記録：未送信（押して再試行）';}finally{sendingPlays=false;}}
+function formatPlayTime(value){return new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(value));}
+async function loadHistory(){const request=++historyRequest;$('historyStatus').textContent='記録を読み込んでいます…';$('historyList').replaceChildren();$('historyPrev').disabled=true;$('historyNext').disabled=true;
+ try{const data=await playRpc('get_hiragana_plays',{page_number:historyPage});if(request!==historyRequest)return;
+ const total=Number(data.total);if(historyPage>0&&historyPage*50>=total){historyPage=Math.max(0,Math.ceil(total/50)-1);return loadHistory();}
+ $('historyStatus').textContent=total?'合計 '+total.toLocaleString('ja-JP')+'回':'まだ練習記録がありません。';
+ $('historyList').start=historyPage*50+1;for(const time of data.times){const row=document.createElement('li');row.textContent=formatPlayTime(time);$('historyList').append(row);}
+ $('historyPage').textContent=(historyPage+1)+' / '+Math.max(1,Math.ceil(total/50));$('historyPrev').disabled=historyPage===0;$('historyNext').disabled=(historyPage+1)*50>=total;
+ $('playCount').textContent='みんなの練習回数：'+total.toLocaleString('ja-JP')+'回';
+ }catch(e){if(request!==historyRequest)return;$('historyStatus').textContent='通信できませんでした。「更新」で再試行できます。';$('historyPage').textContent='';}}
+$('playCount').onclick=async()=>{if(running)$('stop').click();$('history').showModal();historyPage=0;await flushPlays();loadHistory();};
+$('historyClose').onclick=()=>{$('history').close();$('playCount').focus();};
+$('historyPrev').onclick=()=>{if(historyPage>0){historyPage--;loadHistory();}};
+$('historyNext').onclick=()=>{historyPage++;loadHistory();};
+$('historyRefresh').onclick=async()=>{await flushPlays();loadHistory();};
+window.addEventListener('online',()=>{flushPlays();refreshCount();});
+refreshCount();
 </script>
 </body>
 </html>
