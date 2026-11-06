@@ -286,6 +286,42 @@ button:active:not(:disabled){transform:scale(.97)}
 .play-count{width:100%;padding:9px;margin-top:9px;font-size:14px;color:#b6ffe9}.play-note{font-size:11px;color:#a8bbcb;margin:5px 0 0}.history{background:#0d1929;color:#eaf7ff;border:1px solid #5bbaa6;border-radius:18px;width:min(540px,94vw);max-height:85dvh;padding:22px}.history::backdrop{background:#020812cc}.history h2{margin:0;font-size:23px}.history-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.history-list{max-height:45dvh;overflow:auto;padding-left:30px;line-height:2;border-top:1px solid #36516a}.history-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}.history button:disabled{opacity:.4;cursor:default}
 
 .play-count{background:#13746d;color:white;border:0;width:auto;margin:0;padding:6px 12px;font-size:13px}.play-note{color:#53636b;font-size:11px;margin:2px 0 5px}.history button{background:#13746d;color:white}.history .hint{font-size:13px}.history-list{font-size:16px}
+
+.mode-switch{grid-template-columns:repeat(4,minmax(0,1fr))}
+#modeGame{background:#f2e6ff;color:#69359b}
+#monsterStage{margin-top:10px;padding:10px 16px;border-radius:24px;background:linear-gradient(140deg,#f4eaff,#e4f8ff);text-align:center;border:2px solid #decdf1}
+.monster-top{display:flex;justify-content:space-between;align-items:center;color:#64378a;font-weight:700;gap:8px}
+#monsterStars{letter-spacing:5px;color:#986321}
+.monster-scene{display:flex;align-items:center;justify-content:center;gap:clamp(20px,6vw,80px);min-height:220px}
+#monsterCreature{width:190px;height:185px;position:relative;flex-shrink:0;animation:bob 2s ease-in-out infinite}
+.monster-body{position:absolute;inset:22px 12px 15px;background:var(--monster-color,#ae8ce9);border-radius:48% 48% 42% 42%;box-shadow:inset -12px -9px 0 #0000000d}
+.monster-body:before,.monster-body:after{content:'';position:absolute;width:24px;height:30px;background:inherit;border-radius:50%;top:-14px;transform:rotate(-25deg);left:25px}
+.monster-body:after{left:auto;right:25px;transform:rotate(25deg)}
+.monster-eyes{position:absolute;top:50px;left:35px;right:35px;display:flex;justify-content:space-between}
+.monster-eyes i{width:32px;height:40px;background:white;border-radius:50%;position:relative}
+.monster-eyes i:after{content:'';width:11px;height:16px;background:#34304a;position:absolute;top:13px;left:10px;border-radius:50%}
+.monster-mouth{position:absolute;top:104px;left:64px;width:39px;height:21px;border-bottom:6px solid #433459;border-radius:50%}
+.monster-feet{position:absolute;bottom:3px;left:32px;right:32px;display:flex;justify-content:space-between}
+.monster-feet i{width:39px;height:25px;border-radius:50%;background:var(--monster-color,#ae8ce9)}
+.monster-feather{position:absolute;left:-20px;top:90px;font-size:58px;opacity:0}
+#monsterCreature.tickled{animation:tickle .18s ease-in-out infinite}
+.tickled .monster-eyes i{height:8px;margin-top:15px;background:#433459;border-radius:50%}
+.tickled .monster-eyes i:after{display:none}
+.tickled .monster-mouth{height:30px;background:#433459;border:0}
+.tickled .monster-feather{opacity:1}
+#monsterLetterSlot .display{margin:0;width:clamp(140px,24vw,240px);height:210px;min-height:0;font-size:clamp(110px,19vw,180px);background:#fffdf7;border:3px solid #e7d498}
+#monsterMessage{font-size:22px;font-weight:700;color:#64378a;min-height:30px}
+#monsterManual{background:#7754b3;color:white;border:0;font-weight:700}
+#monsterActions{margin-top:8px;justify-content:center}
+body.game-mode #progress{display:none}
+body.game-mode #judgeSection{padding-top:6px}
+body.game-mode #judgeSection>.section-title{display:none}
+body.game-mode #recognitionHelp{font-size:12px}
+@keyframes bob{50%{transform:translateY(-8px) rotate(3deg)}}
+@keyframes tickle{50%{transform:rotate(9deg) scale(1.05)}}
+@media(max-height:850px){.monster-scene{min-height:175px}#monsterLetterSlot .display{height:155px;font-size:130px}#monsterCreature{transform:scale(.85);width:175px;height:170px}#monsterMessage{font-size:18px}body.game-mode .answer{min-height:55px;padding:6px}body.game-mode .controls{gap:7px;margin-top:8px}}
+@media(max-width:520px){.mode-switch{grid-template-columns:repeat(2,1fr)}.monster-scene{gap:8px}#monsterCreature{width:150px}#monsterLetterSlot .display{width:125px;font-size:105px}.monster-top{font-size:13px}#monsterStars{letter-spacing:1px}}
+@media(prefers-reduced-motion:reduce){#monsterCreature,#monsterCreature.tickled{animation:none}}
 </style>
 </head>
 <body>
@@ -296,9 +332,11 @@ button:active:not(:disabled){transform:scale(.97)}
       <button id="modePractice" class="mode-button" type="button" role="radio" aria-checked="true"><span>🌷 今までのモード</span><small>読んでれんしゅう</small></button>
       <button id="modeJudge" class="mode-button" type="button" role="radio" aria-checked="false"><span>⭐ 判定モード</span><small>声でこたえて得点</small></button>
       <button id="modeTimed" class="mode-button" type="button" role="radio" aria-checked="false"><span>⏱ 時間設定モード</span><small>3分・4分などで終了</small></button>
+      <button id="modeGame" class="mode-button" type="button" role="radio" aria-checked="false"><span>👾 ゲームモード</span><small>くすぐって こうさん！</small></button>
     </div>
     <select id="learningMode" hidden aria-hidden="true" tabindex="-1">
-      <option value="practice" selected>今までのモード</option>
+      <option value="game" selected>いたずらモンスター</option>
+      <option value="practice">今までのモード</option>
       <option value="judge">判定モード</option>
       <option value="timed">時間設定モード</option>
     </select>
@@ -316,6 +354,12 @@ button:active:not(:disabled){transform:scale(.97)}
       </label>
     </div>
     <div id="countdown" class="countdown" role="timer" hidden></div>
+    <section id="monsterStage" hidden aria-label="いたずらモンスター">
+      <div class="monster-top"><span>いたずらモンスター</span><span id="monsterStars">☆ ☆ ☆ ☆ ☆</span></div>
+      <div class="monster-scene"><div id="monsterCreature" aria-hidden="true"><div class="monster-body"><div class="monster-eyes"><i></i><i></i></div><div class="monster-mouth"></div></div><div class="monster-feet"><i></i><i></i></div><span class="monster-feather">🪶</span></div><div id="monsterLetterSlot"></div></div>
+      <div id="monsterMessage" role="status">よめたら こちょこちょ！</div>
+      <div class="row" id="monsterActions"><button id="monsterManual" type="button">よめた！〈せんせい〉</button><label><input id="monsterVoice" type="checkbox" checked>こえで はんてい</label></div>
+    </section>
     <div id="char" class="display">あ</div>
     <div id="progress" class="progress"></div>
     <div id="status" class="status" role="status" aria-live="polite">「スタート」を押してください</div>
@@ -484,7 +528,8 @@ let cyclePosition = 0;
 let generation = 0;
 const pendingTimers = new Set();
 const learningModeEl = $("learningMode");
-const isJudgeMode = () => learningModeEl.value === "judge";
+const isGameMode = () => learningModeEl.value === "game";
+const isJudgeMode = () => ["judge","game"].includes(learningModeEl.value);
 const isTimedMode = () => learningModeEl.value === "timed";
 let sessionActive = false;
 let roundComplete = false;
@@ -591,6 +636,45 @@ function playJudgmentSound(kind){
   }
 }
 
+function updateMonster(){
+  const game = isGameMode();
+  document.body.classList.toggle('game-mode',game);
+  $('monsterStage').hidden = !game;
+  if(game && charEl.parentNode !== $('monsterLetterSlot')) $('monsterLetterSlot').append(charEl);
+  if(!game && charEl.parentNode === $('monsterLetterSlot')) $('monsterStage').after(charEl);
+  $('monsterManual').disabled = !running || questionAnswered || roundComplete;
+  $('monsterVoice').disabled = running;
+  $('monsterStars').textContent = '★'.repeat(roundResults.length) + '☆'.repeat(Math.max(0,5-roundResults.length));
+}
+function gameAnswer(kind, heard){
+  if(!running || questionAnswered || roundComplete) return;
+  stopListening();
+  if(kind !== 'correct'){
+    feedback('もういちど よんでみよう', heard ? `きこえた こえ：「${heard}」` : '「聞き取りを再開」か、先生の「よめた！」を押してください');
+    statusEl.textContent = 'ゆっくりで だいじょうぶ';
+    return;
+  }
+  questionAnswered = true;
+  roundResults.push({kana:current,kind:hintUsed?'hint':'correct',heard});
+  $('monsterCreature').classList.add('tickled');
+  $('monsterMessage').textContent = 'あははは！ こうさん！';
+  feedback('よめたね！','こちょ こちょ こちょ！','correct');
+  playJudgmentSound('correct');
+  updateVoiceControls();
+  later(advanceMonster,1800);
+}
+function advanceMonster(){
+  if(!running) return;
+  $('monsterCreature').classList.remove('tickled');
+  if(roundResults.length >= 5){
+    running=false;sessionActive=false;roundComplete=true;cancelTimers();
+    $('monsterMessage').textContent='クリア！ みんな こうさん！';
+    charEl.textContent='🏆';
+    feedback('やったね！','５たいの モンスターに かてたよ！','correct');
+    statusEl.textContent='「もう一度スタート」で また あそべるよ';
+    updateVoiceControls();
+  }else showAndSchedule();
+}
 function updateVoiceControls(){
   const judge = isJudgeMode();
   $("judgeSection").hidden = !judge;
@@ -612,6 +696,13 @@ function updateVoiceControls(){
     ? "文字が出たら自動で声を聞き取ります。正解でも不正解でも次へ進み、一通り終わると得点を表示します。"
     : isTimedMode() ? "選んだ分数が経つと練習を終了します。声の判定・得点はありません。ページを離れている間も時間は進みます。「ストップ」で終了し、次のスタートでは最初から計ります。"
     : "文字を見て読んだあと、答えを読み上げます。声の判定・得点・時間制限はありません。「ストップ」まで練習を続けられます。";
+  updateMonster();
+  if(isGameMode()){
+    $('modeHelp').textContent='読めたら、こちょこちょ！ ５体でクリア。時間制限なし。先生の「よめた！」でも進めます。';
+    $('next').hidden=true;
+    $('recognitionHelp').textContent='聞き間違いや時間切れでも同じ文字に挑戦できます。答えを聞いてから読んでも大丈夫。';
+    $('listen').hidden = $('listen').hidden || !$('monsterVoice').checked;
+  }else $('next').hidden=false;
   updateModeSwitch();
   if(!SpeechRecognitionAPI){
     $("recognitionHelp").textContent = "このブラウザでは声の判定を使えません。対応するSafariやChromeで開いてください。時間設定モードは使えます。";
@@ -647,6 +738,7 @@ function finishRound(){
 
 function completeAnswer(kind, heard = ""){
   if(!isJudgeMode() || !sessionActive || questionAnswered || roundComplete) return;
+  if(isGameMode()){ gameAnswer(kind,heard); return; }
   questionAnswered = true;
   stopListening();
   if(kind === "correct" && hintUsed) kind = "hint";
@@ -719,6 +811,7 @@ function matchesReading(text, target){
 }
 
 function scheduleNext(){
+  if(isGameMode()){ timerNext=later(advanceMonster,1800); return; }
   if(running && (isJudgeMode() || autoEl.checked)){
     timerNext = later(() => {
       if(isJudgeMode() && roundResults.length >= roundKana.length){ finishRound(); return; }
@@ -728,6 +821,7 @@ function scheduleNext(){
 }
 
 function listenForAnswer(){
+  if(isGameMode() && !$("monsterVoice").checked){ feedback("よんでみよう","読めたら先生が「よめた！」を押してください"); return; }
   if(recognition) return;
   if(!isJudgeMode() || !SpeechRecognitionAPI || !selectedKana.length || !running || questionAnswered || roundComplete) return;
   if(!window.isSecureContext){
@@ -838,7 +932,7 @@ function restoreSettings(){
     const duration = localStorage.getItem("hiraganaDuration");
     if(duration && [...durationEl.options].some(o => o.value === duration)) durationEl.value = duration;
     const learningMode = localStorage.getItem("hiraganaLearningMode");
-    if(["judge", "practice", "timed"].includes(learningMode)) learningModeEl.value = learningMode;
+    if(["judge", "practice", "timed", "game"].includes(learningMode)) learningModeEl.value = learningMode;
     else if(localStorage.getItem("hiraganaVoiceCheck") === "0") learningModeEl.value = "practice";
 
     if(font && [...fontEl.options].some(o => o.value === font)) fontEl.value = font;
@@ -916,6 +1010,8 @@ function resetAfterKanaChange(){
   roundComplete = false;
   roundKana = [];
   roundResults = [];
+  $("monsterCreature").classList.remove("tickled");
+  $("monsterMessage").textContent="よめたら こちょこちょ！";
   $("result").hidden = true;
   $("resultRows").innerHTML = "";
   $("progress").textContent = "";
@@ -976,7 +1072,12 @@ function pickChar(){
   questionAnswered = false;
   hintUsed = false;
   charEl.textContent = current;
-  $("progress").textContent = isJudgeMode() ? `${cyclePosition} / ${arr.length}文字` : `${cycle}巡目　${cyclePosition} / ${arr.length}文字`;
+  if(isGameMode()){
+    $('monsterCreature').classList.remove('tickled');
+    $('monsterCreature').style.setProperty('--monster-color',['#ae8ce9','#75c7bb','#f1b36e','#ee9abd','#91b7ef'][roundResults.length]);
+    $('monsterMessage').textContent = (roundResults.length+1)+'たいめ：よめるかな？';
+  }
+  $('progress').textContent = isJudgeMode() ? `${cyclePosition} / ${arr.length}文字` : `${cycle}巡目　${cyclePosition} / ${arr.length}文字`;
   statusEl.textContent = "読んでみましょう";
   feedback("よんでみよう", isJudgeMode() ? "「スタート」を押したら、声で1文字を読んでください" : "設定した時間で読み上げます");
   updateVoiceControls();
@@ -1174,7 +1275,7 @@ $("speak").addEventListener("click", () => {
   if(!selectedKana.length || (isTimedMode() && timedSessionFinished) || (isJudgeMode() && (!running || questionAnswered || roundComplete))) return;
   cancelTimers();
   hintUsed = true;
-  feedback("こたえを きこう", isJudgeMode() ? "この文字は0点です。聞いたあと、自動で声を聞き取ります" : "答えを読み上げます");
+  feedback("こたえを きこう", isGameMode() ? "聞いてから、いっしょに読んでみよう" : isJudgeMode() ? "この文字は0点です。聞いたあと、自動で声を聞き取ります" : "答えを読み上げます");
   speakCurrent(() => {
     if(isJudgeMode()){
       if(running && !questionAnswered) later(listenForAnswer, 350);
@@ -1188,8 +1289,10 @@ $("voiceTest").addEventListener("click", () => {
   speakCurrent(undefined, selectedKana[0] || "あ");
 });
 
+$('monsterManual').addEventListener('click',()=>{if(isGameMode() && running) gameAnswer('correct','先生が確認');});
+$('monsterVoice').addEventListener('change',updateVoiceControls);
 $("listen").addEventListener("click", listenForAnswer);
-const MODE_BUTTONS = {practice: "modePractice", judge: "modeJudge", timed: "modeTimed"};
+const MODE_BUTTONS = {practice: "modePractice", judge: "modeJudge", timed: "modeTimed", game: "modeGame"};
 function updateModeSwitch(){
   for(const [mode, id] of Object.entries(MODE_BUTTONS)){
     const selected = mode === learningModeEl.value;
@@ -1266,7 +1369,7 @@ autoEl.addEventListener("change", () => {
 voiceEl.addEventListener("change", saveSettings);
 
 restoreSettings();
-if(!SpeechRecognitionAPI && isJudgeMode()) learningModeEl.value = "practice";
+if(!SpeechRecognitionAPI && learningModeEl.value === "judge") learningModeEl.value = "practice";
 applyFont();
 renderKanaGrid();
 resetAfterKanaChange();
